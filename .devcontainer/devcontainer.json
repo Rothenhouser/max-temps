@@ -1,23 +1,32 @@
 {
-    "image": "mcr.microsoft.com/devcontainers/universal:2",
-    "hostRequirements": {
-      "cpus": 4
+  "build": {
+      "dockerfile": "Dockerfile",
+      "context": ".."
+  },
+  "hostRequirements": {
+    "cpus": 4
+  },
+  "customizations": {
+    "codespaces": {
+      "openFiles": []
     },
-    "waitFor": "onCreateCommand",
-    "updateContentCommand": "python3 -m pip install -r requirements.txt",
-    "postCreateCommand": "",
-    "customizations": {
-      "codespaces": {
-        "openFiles": []
-      },
-      "vscode": {
-        "extensions": [
-          "ms-toolsai.jupyter",
-          "ms-python.python",
-          "mechatroner.rainbow-csv",
-          "msrvida.vscode-sanddance",
-        ]
+    "vscode": {
+      "extensions": [
+        "ms-toolsai.jupyter",
+        "ms-python.python",
+        "mechatroner.rainbow-csv",
+        "msrvida.vscode-sanddance"
+      ],
+      "settings": {
+        "python.testing.pytestArgs": [
+            "."
+        ],
+        "python.testing.unittestEnabled": false,
+        "python.testing.pytestEnabled": true,
+        "python.formatting.provider": "black",
+        "python.linting.mypyEnabled": true,
+        "python.linting.enabled": true
       }
     }
   }
-  
+}

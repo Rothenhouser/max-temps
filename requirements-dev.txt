@@ -1,3 +1,5 @@
 black
 mypy
+pytest
 jupyter
+types-requests

@@ -1,4 +1,4 @@
-from src.data import get_linked_urls, DATA_DIR_URL
+from data import get_linked_urls, DATA_DIR_URL
 
 
 def test_get_linked_urls():

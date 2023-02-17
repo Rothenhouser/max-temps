@@ -78,4 +78,3 @@ actual_data_availability = pd.DataFrame(parse_data_urls(data_urls)).T.reset_inde
     names="station_id"
 )
 actual_data_availability.head()
-useful_stations

@@ -1,3 +1,8 @@
+import re
+import zipfile
+from io import BytesIO
+
+import bs4
 import pandas as pd
 import requests
 
@@ -6,13 +11,18 @@ STATION_INFO = DATA_DIR_URL + "/KL_Monatswerte_Beschreibung_Stationen.txt"
 
 
 def get_station_info():
-    # Can't parse the headers along with the rest, add manually
+    """
+    Get station info from the station info file.
+
+    Unfortunately, not all stations listed here have data files available.
+    """
     return pd.read_fwf(
         STATION_INFO,
         encoding="windows-1252",
         colspecs="infer",
         infer_nrows=10,
         skiprows=[0, 1],
+        # Can't parse the headers along with the rest because of the terrible formatting.
         header=None,
         names=[
             "Stations_id",
@@ -27,14 +37,10 @@ def get_station_info():
     )
 
 
-import requests
-from bs4 import BeautifulSoup
-
-
-def get_linked_urls(parent_url, ext=""):
+def _get_linked_file_urls(parent_url, ext=""):
     response = requests.get(parent_url)
     response.raise_for_status()
-    soup = BeautifulSoup(response.text, "html.parser")
+    soup = bs4.BeautifulSoup(response.text, "html.parser")
     return [
         parent_url + href
         for node in soup.find_all("a")
@@ -42,14 +48,7 @@ def get_linked_urls(parent_url, ext=""):
     ]
 
 
-url = DATA_DIR_URL
-ext = "zip"
-data_urls = get_linked_urls(url, ext)
-
-import re
-
-
-def parse_data_urls(data_urls):
+def _parse_data_urls_for_availability(data_urls):
     availability = {}
     for url in data_urls:
         m = re.search("KL_(\d*)_(\d*)_(\d*)_hist", url)
@@ -60,10 +59,11 @@ def parse_data_urls(data_urls):
     return availability
 
 
-def filter_availability(availability, latest_start=19800000, earliest_end=20200000):
-    availability_df = pd.DataFrame(parse_data_urls(data_urls)).T.reset_index(
-        names="station_id"
-    )
+def get_useful_stations_from_data_urls(latest_start=19800000, earliest_end=20200000):
+    data_urls = _get_linked_file_urls(DATA_DIR_URL, "zip")
+    availability_df = pd.DataFrame(
+        _parse_data_urls_for_availability(data_urls)
+    ).T.reset_index(names="station_id")
     useful_stations = availability_df[
         (availability_df["end"] >= earliest_end)
         & (availability_df["start"] <= latest_start)
@@ -74,7 +74,16 @@ def filter_availability(availability, latest_start=19800000, earliest_end=202000
     return useful_stations
 
 
-actual_data_availability = pd.DataFrame(parse_data_urls(data_urls)).T.reset_index(
-    names="station_id"
-)
-actual_data_availability.head()
+def get_temperatures(zip_url):
+    response = requests.get(zip_url)
+    response.raise_for_status()
+    with zipfile.ZipFile(BytesIO(response.content)) as myzip:
+        [temperatures] = [n for n in myzip.namelist() if n.startswith("produkt")]
+        with myzip.open(temperatures) as f:
+            return pd.read_csv(
+                f,
+                sep=";",
+                index_col="MESS_DATUM_BEGINN",
+                usecols=["MESS_DATUM_BEGINN", "MX_TX"],
+                parse_dates=["MESS_DATUM_BEGINN"],
+            )

@@ -68,9 +68,6 @@ def get_useful_stations_from_data_urls(latest_start=19800000, earliest_end=20200
         (availability_df["end"] >= earliest_end)
         & (availability_df["start"] <= latest_start)
     ]
-    print(
-        f"Of {len(data_urls)} data files, only {len(useful_stations)} are long enough to be interesting."
-    )
     return useful_stations
 
 
